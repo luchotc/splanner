@@ -7,6 +7,7 @@ import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
@@ -33,58 +34,31 @@ public class MainActivity extends AppCompatActivity implements
     private ListView tasksList;
     private ListView dayList;
 
+    private long selectedGoal;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         this.setContentView(R.layout.main_activity);
 
-        final LoaderManager lm = this.getSupportLoaderManager();
 
         this.goalsList = (ListView) this.findViewById(R.id.list_goals);
         this.tasksList = (ListView) this.findViewById(R.id.list_tasks);
         this.dayList = (ListView) this.findViewById(R.id.list_day);
 
-        this.goalsList.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, int position,
-                                           final long id) {
-                new AlertDialog.Builder(MainActivity.this)
-                    .setTitle(R.string.dialog_delete_goal)
-                    .setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            if (DatabaseHelper.getInstance(MainActivity.this).deleteGoal(id)) {
-                                lm.restartLoader(
-                                        LoaderType.GOALS.ordinal(), null, MainActivity.this);
-                            } else {
-                                Toast.makeText(
-                                        MainActivity.this, R.string.error, Toast.LENGTH_SHORT)
-                                        .show();
-                            }
-                        }
-                    })
-                    .setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                        }
-                    })
-                    .show();
-                return true;
-            }
-        });
+        final LoaderManager lm = this.getSupportLoaderManager();
+        lm.initLoader(LoaderType.GOALS.ordinal(), null, this);
+        lm.initLoader(LoaderType.DAY.ordinal(), null, this);
 
-        for (final LoaderType type : LoaderType.values()) {
-            lm.initLoader(type.ordinal(), null, this);
-        }
-
+        /* Goals list */
         this.findViewById(R.id.btn_add_goal).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 final View view = LayoutInflater.from(MainActivity.this).inflate(
                         R.layout.add_dialog, null);
                 final EditText goal = (EditText) view.findViewById(R.id.new_item);
+                goal.setHint(R.string.dialog_add_goal_hint);
                 new AlertDialog.Builder(MainActivity.this)
                     .setTitle(R.string.dialog_add_goal)
                     .setView(view)
@@ -111,16 +85,136 @@ public class MainActivity extends AppCompatActivity implements
                     .show();
             }
         });
+        this.goalsList.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position,
+                                           final long id) {
+                new AlertDialog.Builder(MainActivity.this)
+                    .setTitle(R.string.dialog_delete_goal)
+                    .setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            if (DatabaseHelper.getInstance(MainActivity.this).deleteGoal(id)) {
+                                lm.restartLoader(
+                                        LoaderType.GOALS.ordinal(), null, MainActivity.this);
+                            } else {
+                                Toast.makeText(
+                                        MainActivity.this, R.string.error, Toast.LENGTH_SHORT)
+                                    .show();
+                            }
+                        }
+                    })
+                    .setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    })
+                    .show();
+                return true;
+            }
+        });
+        this.goalsList.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                MainActivity.this.selectedGoal = id;
+                Log.e("SPLANNER", "" + id);
+                lm.restartLoader(LoaderType.TASKS.ordinal(), null, MainActivity.this);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) { /* NOP */ }
+        });
+
+        /* Tasks list */
+        this.findViewById(R.id.btn_add_task).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (MainActivity.this.selectedGoal == 0) {
+                    Toast.makeText(MainActivity.this, R.string.select_goal, Toast.LENGTH_SHORT)
+                        .show();
+                    return;
+                }
+                final View view = LayoutInflater.from(MainActivity.this).inflate(
+                        R.layout.add_dialog, null);
+                final EditText task = (EditText) view.findViewById(R.id.new_item);
+                task.setHint(R.string.dialog_add_task_hint);
+                new AlertDialog.Builder(MainActivity.this)
+                    .setTitle(R.string.dialog_add_task)
+                    .setView(view)
+                    .setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            if (DatabaseHelper.getInstance(MainActivity.this).insertTask(
+                                    MainActivity.this.selectedGoal, task.getText().toString())) {
+                                lm.restartLoader(
+                                        LoaderType.TASKS.ordinal(), null, MainActivity.this);
+                            } else {
+                                Toast.makeText(
+                                        MainActivity.this, R.string.error, Toast.LENGTH_SHORT)
+                                    .show();
+                            }
+                        }
+                    })
+                    .setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    })
+                    .show();
+            }
+        });
+        this.tasksList.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position,
+                                           final long id) {
+                new AlertDialog.Builder(MainActivity.this)
+                    .setTitle(R.string.dialog_delete_task)
+                    .setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            if (DatabaseHelper.getInstance(MainActivity.this).deleteTask(id)) {
+                                lm.restartLoader(
+                                        LoaderType.TASKS.ordinal(), null, MainActivity.this);
+                            } else {
+                                Toast.makeText(
+                                        MainActivity.this, R.string.error, Toast.LENGTH_SHORT)
+                                    .show();
+                            }
+                        }
+                    })
+                    .setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    })
+                    .show();
+                return true;
+            }
+        });
+        this.tasksList.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                Toast.makeText(MainActivity.this, Long.toString(id), Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) { /* NOP */ }
+        });
     }
 
     @Override
-    public Loader<Item[]> onCreateLoader(final int id, Bundle args) {
+    public Loader<Item[]> onCreateLoader(final int id, final Bundle args) {
         return new SAsyncTaskLoader<Item[]>(this) {
             @Override
             public Item[] loadInBackground() {
                 switch (LoaderType.get(id)) {
                 case TASKS:
-                    return null;//DatabaseHelper.getInstance(MainActivity.this).getTasks();
+                    return MainActivity.this.selectedGoal == 0 ? null
+                            : DatabaseHelper.getInstance(MainActivity.this).getTasks(
+                                    MainActivity.this.selectedGoal);
                 case DAY:
                     return null;//DatabaseHelper.getInstance(MainActivity.this).getDay();
                 case GOALS:

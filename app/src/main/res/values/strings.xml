@@ -10,5 +10,6 @@
     <string name="dialog_ok">OK</string>
     <string name="dialog_cancel">Cancel</string>
 
+    <string name="select_goal">Select a goal to add tasks!</string>
     <string name="error">Oops! There was a problem =(</string>
 </resources>
