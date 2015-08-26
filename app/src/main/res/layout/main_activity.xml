@@ -28,4 +28,15 @@
         android:layout_height="match_parent"
         android:layout_toRightOf="@id/centerline"
         />
+
+    <Button style="@style/AddButton"
+        android:id="@+id/btn_add_goal"
+        android:layout_alignBottom="@id/list_goals"
+        android:layout_toLeftOf="@id/centerline"
+        />
+    <Button style="@style/AddButton"
+        android:id="@+id/btn_add_task"
+        android:layout_alignBottom="@id/list_tasks"
+        android:layout_toLeftOf="@id/centerline"
+        />
 </RelativeLayout>

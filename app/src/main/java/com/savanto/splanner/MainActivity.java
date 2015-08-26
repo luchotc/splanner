@@ -1,15 +1,23 @@
 package com.savanto.splanner;
 
+import android.content.Context;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.Toast;
 
 
 public class MainActivity extends AppCompatActivity implements
-        LoaderManager.LoaderCallbacks<String[]> {
+        LoaderManager.LoaderCallbacks<Item[]> {
 
     private enum LoaderType {
         GOALS, TASKS, DAY
@@ -31,26 +39,90 @@ public class MainActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         this.setContentView(R.layout.main_activity);
 
+        final LoaderManager lm = this.getSupportLoaderManager();
+
         this.goalsList = (ListView) this.findViewById(R.id.list_goals);
         this.tasksList = (ListView) this.findViewById(R.id.list_tasks);
         this.dayList = (ListView) this.findViewById(R.id.list_day);
 
-        final LoaderManager lm = this.getSupportLoaderManager();
+        this.goalsList.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position,
+                                           final long id) {
+                new AlertDialog.Builder(MainActivity.this)
+                    .setTitle(R.string.dialog_delete_goal)
+                    .setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            if (DatabaseHelper.getInstance(MainActivity.this).deleteGoal(id)) {
+                                lm.restartLoader(
+                                        LoaderType.GOALS.ordinal(), null, MainActivity.this);
+                            } else {
+                                Toast.makeText(
+                                        MainActivity.this, R.string.error, Toast.LENGTH_SHORT)
+                                        .show();
+                            }
+                        }
+                    })
+                    .setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    })
+                    .show();
+                return true;
+            }
+        });
+
         for (final LoaderType type : LoaderType.values()) {
             lm.initLoader(type.ordinal(), null, this);
         }
+
+        this.findViewById(R.id.btn_add_goal).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                final View view = LayoutInflater.from(MainActivity.this).inflate(
+                        R.layout.add_dialog, null);
+                final EditText goal = (EditText) view.findViewById(R.id.new_item);
+                new AlertDialog.Builder(MainActivity.this)
+                    .setTitle(R.string.dialog_add_goal)
+                    .setView(view)
+                    .setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            if (DatabaseHelper.getInstance(MainActivity.this).insertGoal(
+                                    goal.getText().toString())) {
+                                lm.restartLoader(
+                                        LoaderType.GOALS.ordinal(), null, MainActivity.this);
+                            } else {
+                                Toast.makeText(
+                                        MainActivity.this, R.string.error, Toast.LENGTH_SHORT)
+                                    .show();
+                            }
+                        }
+                    })
+                    .setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                        }
+                    })
+                    .show();
+            }
+        });
     }
 
     @Override
-    public Loader<String[]> onCreateLoader(final int id, Bundle args) {
-        return new SAsyncTaskLoader<String[]>(this) {
+    public Loader<Item[]> onCreateLoader(final int id, Bundle args) {
+        return new SAsyncTaskLoader<Item[]>(this) {
             @Override
-            public String[] loadInBackground() {
+            public Item[] loadInBackground() {
                 switch (LoaderType.get(id)) {
                 case TASKS:
-                    return DatabaseHelper.getInstance(MainActivity.this).getTasks();
+                    return null;//DatabaseHelper.getInstance(MainActivity.this).getTasks();
                 case DAY:
-                    return DatabaseHelper.getInstance(MainActivity.this).getDay();
+                    return null;//DatabaseHelper.getInstance(MainActivity.this).getDay();
                 case GOALS:
                     // FALL-THROUGH
                 default:
@@ -62,23 +134,38 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onLoadFinished(Loader<String[]> loader, String[] data) {
+    public void onLoadFinished(Loader<Item[]> loader, Item[] items) {
+        if (items == null) {
+            items = new Item[0];
+        }
         switch (LoaderType.get(loader.getId())) {
         case GOALS:
             this.goalsList.setAdapter(
-                    new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, data));
+                    new SPlannerAdapter(this, android.R.layout.simple_list_item_1, items));
             break;
         case TASKS:
             this.tasksList.setAdapter(
-                    new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, data));
+                    new SPlannerAdapter(this, android.R.layout.simple_list_item_1, items));
             break;
         case DAY:
             this.dayList.setAdapter(
-                    new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, data));
+                    new SPlannerAdapter(this, android.R.layout.simple_list_item_1, items));
             break;
         }
     }
 
     @Override
-    public void onLoaderReset(Loader<String[]> loader) { /* NOP */ }
+    public void onLoaderReset(Loader<Item[]> loader) { /* NOP */ }
+
+
+    private static final class SPlannerAdapter extends ArrayAdapter<Item> {
+        public SPlannerAdapter(Context context, int resource, Item[] items) {
+            super(context, resource, items);
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return this.getItem(position).id;
+        }
+    }
 }

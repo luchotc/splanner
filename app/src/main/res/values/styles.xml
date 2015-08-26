@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AddButton">
+        <item name="android:layout_width">@dimen/btn</item>
+        <item name="android:layout_height">@dimen/btn</item>
+        <item name="android:layout_margin">10dp</item>
+        <item name="android:background">@drawable/btn_add</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:text">@string/btn_add</item>
+    </style>
+</resources>
