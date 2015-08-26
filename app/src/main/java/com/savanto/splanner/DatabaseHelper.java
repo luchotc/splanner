@@ -54,6 +54,14 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
         return new String[] { "a", "b", "c", "d" };
     }
 
+    public String[] getTasks() {
+        return new String[] { "task1", "task2", "task3", "task4" };
+    }
+
+    public String[] getDay() {
+        return new String[] { "8.00 -- do stuff", "9.00 -- rest" };
+    }
+
 
     private static final class Schema implements BaseColumns {
         private static final String TABLE_GOALS = "Goals";
