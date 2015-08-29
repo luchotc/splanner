@@ -8,6 +8,7 @@
     <string name="dialog_add_task">Add task</string>
     <string name="dialog_add_goal_hint">Conquer the world</string>
     <string name="dialog_add_task_hint">Steal underwear</string>
+    <string name="dialog_add_time">Pick a time</string>
     <string name="dialog_delete_goal">Delete this goal?</string>
     <string name="dialog_delete_task">Delete this task?</string>
     <string name="dialog_ok">OK</string>

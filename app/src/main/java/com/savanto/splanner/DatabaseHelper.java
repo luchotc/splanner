@@ -12,7 +12,7 @@ import android.provider.BaseColumns;
 
 public final class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE = "splanner.db";
-    private static final int VERSION = 1;
+    private static final int VERSION = 2;
 
     private static final char COMMA = ',';
     private static final String TYPE_INT = " INTEGER";
@@ -26,6 +26,12 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
     private static final String CREATE_TABLE_TASKS = CREATE_TABLE + Schema.TABLE_TASKS + "("
             + Schema._ID + TYPE_INT + " PRIMARY KEY AUTOINCREMENT" + COMMA
             + Schema.FIELD_GOAL_ID + TYPE_INT + COMMA
+            + Schema.FIELD_TEXT + TYPE_TEXT
+            + ")";
+    private static final String CREATE_TABLE_DAY = CREATE_TABLE + Schema.TABLE_DAY + "("
+            + Schema._ID + TYPE_INT + " PRIMARY KEY AUTOINCREMENT" + COMMA
+            + Schema.FIELD_TASK_ID + TYPE_INT + COMMA
+            + Schema.FIELD_TIME + TYPE_INT + COMMA
             + Schema.FIELD_TEXT + TYPE_TEXT
             + ")";
     private static final String DROP_TABLE = "DROP TABLE IF EXISTS ";
@@ -48,12 +54,14 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         db.execSQL(CREATE_TABLE_GOALS);
         db.execSQL(CREATE_TABLE_TASKS);
+        db.execSQL(CREATE_TABLE_DAY);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         db.execSQL(DROP_TABLE + Schema.TABLE_GOALS);
         db.execSQL(DROP_TABLE + Schema.TABLE_TASKS);
+        db.execSQL(DROP_TABLE + Schema.TABLE_DAY);
         this.onCreate(db);
     }
 
@@ -166,6 +174,7 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
                 );
             } while (cursor.moveToNext());
 
+            cursor.close();
             return goals;
         } else {
             return null;
@@ -190,14 +199,36 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
                 );
             } while (cursor.moveToNext());
 
+            cursor.close();
             return tasks;
         } else {
             return null;
         }
     }
 
-    public String[] getDay() {
-        return new String[] { "8.00 -- do stuff", "9.00 -- rest" };
+    public Item[] getDay() {
+        final Cursor cursor = this.select(
+                Schema.TABLE_DAY,
+                null,
+                null,
+                null,
+                Schema.FIELD_TIME + ASC,
+                null
+        );
+        if (cursor != null && DatabaseHelper.moveToFirst(cursor)) {
+            final Item[] times = new Item[cursor.getCount()];
+            do {
+                times[cursor.getPosition()] = new Item(
+                        DatabaseHelper.getLong(cursor, Schema._ID),
+                        DatabaseHelper.getLong(cursor, Schema.FIELD_TIME),
+                        DatabaseHelper.getString(cursor, Schema.FIELD_TEXT)
+                );
+            } while (cursor.moveToNext());
+
+            cursor.close();
+            return times;
+        }
+        return null;
     }
 
     public boolean insertGoal(String goal) {
@@ -215,6 +246,15 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
         return this.insert(Schema.TABLE_TASKS, values);
     }
 
+    public boolean insertTime(long time, Item task) {
+        final ContentValues values = new ContentValues(3);
+        values.put(Schema.FIELD_TASK_ID, task.id);
+        values.put(Schema.FIELD_TIME, time);
+        values.put(Schema.FIELD_TEXT, task.text);
+
+        return this.insert(Schema.TABLE_DAY, values);
+    }
+
     public boolean deleteGoal(long id) {
         return this.delete(Schema.TABLE_GOALS, id);
     }
@@ -224,11 +264,36 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
     }
 
 
+    public boolean clearDay() {
+        final SQLiteDatabase db;
+        try {
+            db = this.getWritableDatabase();
+        } catch (SQLiteException e) {
+            return false;
+        }
+
+        try {
+            db.beginTransaction();
+            db.execSQL(DROP_TABLE + Schema.TABLE_DAY);
+            db.execSQL(CREATE_TABLE_DAY);
+            db.setTransactionSuccessful();
+        } catch (SQLiteException e) {
+            return false;
+        } finally {
+            db.endTransaction();
+        }
+
+        return true;
+    }
+
     private static final class Schema implements BaseColumns {
         private static final String TABLE_GOALS = "Goals";
         private static final String TABLE_TASKS = "Tasks";
+        private static final String TABLE_DAY = "Day";
 
         private static final String FIELD_TEXT = "text";
         private static final String FIELD_GOAL_ID = "goal_id";
+        private static final String FIELD_TASK_ID = "task_id";
+        private static final String FIELD_TIME = "time";
     }
 }

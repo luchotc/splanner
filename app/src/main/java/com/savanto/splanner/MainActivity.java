@@ -2,7 +2,9 @@ package com.savanto.splanner;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AlertDialog;
@@ -13,11 +15,15 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.TimePicker;
 import android.widget.Toast;
+
+import java.util.Calendar;
 
 
 public class MainActivity extends AppCompatActivity implements
         LoaderManager.LoaderCallbacks<Item[]> {
+    private static final String PREF_YESTERDAY = "com.savanto.splanner.Yesterday";
     private static final int LOADER_GOALS = 0;
     private static final int LOADER_TASKS = 1;
     private static final int LOADER_DAY = 2;
@@ -41,19 +47,30 @@ public class MainActivity extends AppCompatActivity implements
         final LoaderManager lm = this.getSupportLoaderManager();
         lm.initLoader(LOADER_GOALS, null, this);
         lm.initLoader(LOADER_TASKS, null, this);
+
+        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        final long yesterday = prefs.getLong(PREF_YESTERDAY, 0);
+        final Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        final long today = calendar.getTimeInMillis() / 1000;
+        if (true || today > yesterday) {
+            DatabaseHelper.getInstance(this).clearDay();
+            prefs.edit().putLong(PREF_YESTERDAY, today).apply();
+        }
         lm.initLoader(LOADER_DAY, null, this);
 
         /* Goals list */
         this.findViewById(R.id.btn_add_goal).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                final View view = LayoutInflater.from(MainActivity.this).inflate(
+                final EditText goal = (EditText) LayoutInflater.from(MainActivity.this).inflate(
                         R.layout.add_dialog, null);
-                final EditText goal = (EditText) view.findViewById(R.id.new_item);
                 goal.setHint(R.string.dialog_add_goal_hint);
                 new AlertDialog.Builder(MainActivity.this)
                     .setTitle(R.string.dialog_add_goal)
-                    .setView(view)
+                    .setView(goal)
                     .setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
@@ -67,12 +84,7 @@ public class MainActivity extends AppCompatActivity implements
                             }
                         }
                     })
-                    .setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                        }
-                    })
+                    .setNegativeButton(R.string.dialog_cancel, new DialogCancelListener())
                     .show();
             }
         });
@@ -94,12 +106,7 @@ public class MainActivity extends AppCompatActivity implements
                             }
                         }
                     })
-                    .setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                        }
-                    })
+                    .setNegativeButton(R.string.dialog_cancel, new DialogCancelListener())
                     .show();
                 return true;
             }
@@ -121,13 +128,12 @@ public class MainActivity extends AppCompatActivity implements
                         .show();
                     return;
                 }
-                final View view = LayoutInflater.from(MainActivity.this).inflate(
+                final EditText task = (EditText) LayoutInflater.from(MainActivity.this).inflate(
                         R.layout.add_dialog, null, false);
-                final EditText task = (EditText) view.findViewById(R.id.new_item);
                 task.setHint(R.string.dialog_add_task_hint);
                 new AlertDialog.Builder(MainActivity.this)
                     .setTitle(R.string.dialog_add_task)
-                    .setView(view)
+                    .setView(task)
                     .setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
@@ -141,12 +147,7 @@ public class MainActivity extends AppCompatActivity implements
                             }
                         }
                     })
-                    .setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                        }
-                    })
+                    .setNegativeButton(R.string.dialog_cancel, new DialogCancelListener())
                     .show();
             }
         });
@@ -168,22 +169,41 @@ public class MainActivity extends AppCompatActivity implements
                             }
                         }
                     })
-                    .setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                        }
-                    })
+                    .setNegativeButton(R.string.dialog_cancel, new DialogCancelListener())
                     .show();
                 return true;
             }
         });
         this.tasksList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Toast.makeText(MainActivity.this, Long.toString(id), Toast.LENGTH_SHORT).show();
+            public void onItemClick(final AdapterView<?> parent, View view, final int position,
+                                    long id) {
+                final TimePicker time = (TimePicker) LayoutInflater.from(MainActivity.this).inflate(
+                        R.layout.time_dialog, null, false);
+                new AlertDialog.Builder(MainActivity.this)
+                    .setTitle(R.string.dialog_add_time)
+                    .setView(time)
+                    .setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            if (DatabaseHelper.getInstance(MainActivity.this).insertTime(
+                                    time.getCurrentHour() * 3600 + time.getCurrentMinute() * 60,
+                                    (Item) parent.getAdapter().getItem(position))) {
+                                lm.restartLoader(LOADER_DAY, null, MainActivity.this);
+                            } else {
+                                Toast.makeText(
+                                        MainActivity.this, R.string.error, Toast.LENGTH_SHORT)
+                                    .show();
+                            }
+                        }
+                    })
+                    .setNegativeButton(R.string.dialog_cancel, new DialogCancelListener())
+                    .show();
             }
         });
+
+        /* Day schedule */
+
     }
 
     @Override
@@ -196,7 +216,7 @@ public class MainActivity extends AppCompatActivity implements
                     return DatabaseHelper.getInstance(MainActivity.this).getTasks(
                                     MainActivity.this.selectedGoal);
                 case LOADER_DAY:
-                    return null;//DatabaseHelper.getInstance(MainActivity.this).getDay();
+                    return DatabaseHelper.getInstance(MainActivity.this).getDay();
                 case LOADER_GOALS:
                     // FALL-THROUGH
                 default:
@@ -213,22 +233,27 @@ public class MainActivity extends AppCompatActivity implements
         }
         switch (loader.getId()) {
         case LOADER_GOALS:
-            this.goalsList.setAdapter(
-                    new SPlannerAdapter(this, R.layout.list_item_single, items));
+            this.goalsList.setAdapter(new SPlannerAdapter(this, R.layout.list_item_single, items));
             break;
         case LOADER_TASKS:
-            this.tasksList.setAdapter(
-                    new SPlannerAdapter(this, R.layout.list_item, items));
+            this.tasksList.setAdapter(new SPlannerAdapter(this, R.layout.list_item, items));
             break;
         case LOADER_DAY:
-            this.dayList.setAdapter(
-                    new SPlannerAdapter(this, R.layout.list_item, items));
+            this.dayList.setAdapter(new SPlannerAdapter(this, R.layout.list_item, items));
             break;
         }
     }
 
     @Override
     public void onLoaderReset(Loader<Item[]> loader) { /* NOP */ }
+
+
+    private static final class DialogCancelListener implements DialogInterface.OnClickListener {
+        @Override
+        public void onClick(DialogInterface dialog, int which) {
+            dialog.dismiss();
+        }
+    }
 
 
     private static final class SPlannerAdapter extends ArrayAdapter<Item> {
