@@ -28,6 +28,7 @@ public class MainActivity extends AppCompatActivity implements
     private static final int LOADER_TASKS = 1;
     private static final int LOADER_DAY = 2;
 
+    private SharedPreferences prefs;
     private ListView goalsList;
     private ListView tasksList;
     private ListView dayList;
@@ -40,6 +41,8 @@ public class MainActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         this.setContentView(R.layout.main_activity);
 
+        this.prefs = PreferenceManager.getDefaultSharedPreferences(this);
+
         this.goalsList = (ListView) this.findViewById(R.id.list_goals);
         this.tasksList = (ListView) this.findViewById(R.id.list_tasks);
         this.dayList = (ListView) this.findViewById(R.id.list_day);
@@ -47,18 +50,6 @@ public class MainActivity extends AppCompatActivity implements
         final LoaderManager lm = this.getSupportLoaderManager();
         lm.initLoader(LOADER_GOALS, null, this);
         lm.initLoader(LOADER_TASKS, null, this);
-
-        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        final long yesterday = prefs.getLong(PREF_YESTERDAY, 0);
-        final Calendar calendar = Calendar.getInstance();
-        calendar.set(Calendar.HOUR_OF_DAY, 0);
-        calendar.set(Calendar.MINUTE, 0);
-        calendar.set(Calendar.SECOND, 0);
-        final long today = calendar.getTimeInMillis() / 1000;
-        if (true || today > yesterday) {
-            DatabaseHelper.getInstance(this).clearDay();
-            prefs.edit().putLong(PREF_YESTERDAY, today).apply();
-        }
         lm.initLoader(LOADER_DAY, null, this);
 
         /* Goals list */
@@ -204,6 +195,22 @@ public class MainActivity extends AppCompatActivity implements
 
         /* Day schedule */
 
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        final long yesterday = this.prefs.getLong(PREF_YESTERDAY, 0);
+        final Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        final long now = calendar.getTimeInMillis() / 1000;
+        if (now > yesterday) {
+            DatabaseHelper.getInstance(this).clearDay();
+            this.prefs.edit().putLong(PREF_YESTERDAY, now).apply();
+            this.getSupportLoaderManager().restartLoader(LOADER_DAY, null, this);
+        }
     }
 
     @Override
