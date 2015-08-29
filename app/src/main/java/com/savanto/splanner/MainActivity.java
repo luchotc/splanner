@@ -34,7 +34,7 @@ public class MainActivity extends AppCompatActivity implements
     private ListView tasksList;
     private ListView dayList;
 
-    private long selectedGoal;
+    private long selectedGoalId;
 
 
     @Override
@@ -90,12 +90,12 @@ public class MainActivity extends AppCompatActivity implements
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             if (DatabaseHelper.getInstance(MainActivity.this).deleteGoal(id)) {
+                                if (((CheckedTextView) view).isChecked()) {
+                                    MainActivity.this.selectedGoalId = 0;
+                                }
                                 lm.restartLoader(LOADER_GOALS, null, MainActivity.this);
                                 lm.restartLoader(LOADER_TASKS, null, MainActivity.this);
                                 lm.restartLoader(LOADER_TIMES, null, MainActivity.this);
-                                if (((CheckedTextView) view).isChecked()) {
-                                    MainActivity.this.selectedGoal = 0;
-                                }
                             } else {
                                 Toast.makeText(
                                         MainActivity.this, R.string.error, Toast.LENGTH_SHORT)
@@ -111,7 +111,7 @@ public class MainActivity extends AppCompatActivity implements
         this.goalsList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                MainActivity.this.selectedGoal = id;
+                MainActivity.this.selectedGoalId = id;
                 lm.restartLoader(LOADER_TASKS, null, MainActivity.this);
             }
         });
@@ -120,7 +120,7 @@ public class MainActivity extends AppCompatActivity implements
         this.findViewById(R.id.btn_add_task).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (MainActivity.this.selectedGoal == 0) {
+                if (MainActivity.this.selectedGoalId == 0) {
                     Toast.makeText(MainActivity.this, R.string.select_goal, Toast.LENGTH_SHORT)
                         .show();
                     return;
@@ -135,7 +135,7 @@ public class MainActivity extends AppCompatActivity implements
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             if (DatabaseHelper.getInstance(MainActivity.this).insertTask(
-                                    MainActivity.this.selectedGoal, task.getText().toString())) {
+                                    MainActivity.this.selectedGoalId, task.getText().toString())) {
                                 lm.restartLoader(LOADER_TASKS, null, MainActivity.this);
                             } else {
                                 Toast.makeText(
@@ -250,7 +250,7 @@ public class MainActivity extends AppCompatActivity implements
                 switch (id) {
                 case LOADER_TASKS:
                     return DatabaseHelper.getInstance(MainActivity.this).getTasks(
-                                    MainActivity.this.selectedGoal);
+                                    MainActivity.this.selectedGoalId);
                 case LOADER_TIMES:
                     return DatabaseHelper.getInstance(MainActivity.this).getTimes();
                 case LOADER_GOALS:
@@ -269,7 +269,16 @@ public class MainActivity extends AppCompatActivity implements
         }
         switch (loader.getId()) {
         case LOADER_GOALS:
-            this.goalsList.setAdapter(new SPlannerAdapter(this, R.layout.list_item_single, items));
+            final SPlannerAdapter adapter = new SPlannerAdapter(
+                    this, R.layout.list_item_single, items);
+            this.goalsList.setAdapter(adapter);
+            final int nGoals = adapter.getCount();
+            for (int pos = 0; pos < nGoals; ++pos) {
+                if (adapter.getItemId(pos) == this.selectedGoalId) {
+                    this.goalsList.setItemChecked(pos, true);
+                    break;
+                }
+            }
             break;
         case LOADER_TASKS:
             this.tasksList.setAdapter(new SPlannerAdapter(this, R.layout.list_item, items));
