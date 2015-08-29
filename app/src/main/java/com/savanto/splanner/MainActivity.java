@@ -18,16 +18,9 @@ import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity implements
         LoaderManager.LoaderCallbacks<Item[]> {
-
-    private enum LoaderType {
-        GOALS, TASKS, DAY
-        ;
-
-        public static LoaderType get(int index) {
-            final LoaderType[] values = LoaderType.values();
-            return index >= 0 && index < values.length ? values[index] : GOALS;
-        }
-    }
+    private static final int LOADER_GOALS = 0;
+    private static final int LOADER_TASKS = 1;
+    private static final int LOADER_DAY = 2;
 
     private ListView goalsList;
     private ListView tasksList;
@@ -46,8 +39,9 @@ public class MainActivity extends AppCompatActivity implements
         this.dayList = (ListView) this.findViewById(R.id.list_day);
 
         final LoaderManager lm = this.getSupportLoaderManager();
-        lm.initLoader(LoaderType.GOALS.ordinal(), null, this);
-        lm.initLoader(LoaderType.DAY.ordinal(), null, this);
+        lm.initLoader(LOADER_GOALS, null, this);
+        lm.initLoader(LOADER_TASKS, null, this);
+        lm.initLoader(LOADER_DAY, null, this);
 
         /* Goals list */
         this.findViewById(R.id.btn_add_goal).setOnClickListener(new View.OnClickListener() {
@@ -65,8 +59,7 @@ public class MainActivity extends AppCompatActivity implements
                         public void onClick(DialogInterface dialog, int which) {
                             if (DatabaseHelper.getInstance(MainActivity.this).insertGoal(
                                     goal.getText().toString())) {
-                                lm.restartLoader(
-                                        LoaderType.GOALS.ordinal(), null, MainActivity.this);
+                                lm.restartLoader(LOADER_GOALS, null, MainActivity.this);
                             } else {
                                 Toast.makeText(
                                         MainActivity.this, R.string.error, Toast.LENGTH_SHORT)
@@ -93,8 +86,7 @@ public class MainActivity extends AppCompatActivity implements
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             if (DatabaseHelper.getInstance(MainActivity.this).deleteGoal(id)) {
-                                lm.restartLoader(
-                                        LoaderType.GOALS.ordinal(), null, MainActivity.this);
+                                lm.restartLoader(LOADER_GOALS, null, MainActivity.this);
                             } else {
                                 Toast.makeText(
                                         MainActivity.this, R.string.error, Toast.LENGTH_SHORT)
@@ -116,7 +108,7 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 MainActivity.this.selectedGoal = id;
-                lm.restartLoader(LoaderType.TASKS.ordinal(), null, MainActivity.this);
+                lm.restartLoader(LOADER_TASKS, null, MainActivity.this);
             }
         });
 
@@ -141,8 +133,7 @@ public class MainActivity extends AppCompatActivity implements
                         public void onClick(DialogInterface dialog, int which) {
                             if (DatabaseHelper.getInstance(MainActivity.this).insertTask(
                                     MainActivity.this.selectedGoal, task.getText().toString())) {
-                                lm.restartLoader(
-                                        LoaderType.TASKS.ordinal(), null, MainActivity.this);
+                                lm.restartLoader(LOADER_TASKS, null, MainActivity.this);
                             } else {
                                 Toast.makeText(
                                         MainActivity.this, R.string.error, Toast.LENGTH_SHORT)
@@ -169,8 +160,7 @@ public class MainActivity extends AppCompatActivity implements
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             if (DatabaseHelper.getInstance(MainActivity.this).deleteTask(id)) {
-                                lm.restartLoader(
-                                        LoaderType.TASKS.ordinal(), null, MainActivity.this);
+                                lm.restartLoader(LOADER_TASKS, null, MainActivity.this);
                             } else {
                                 Toast.makeText(
                                         MainActivity.this, R.string.error, Toast.LENGTH_SHORT)
@@ -201,18 +191,16 @@ public class MainActivity extends AppCompatActivity implements
         return new SAsyncTaskLoader<Item[]>(this) {
             @Override
             public Item[] loadInBackground() {
-                switch (LoaderType.get(id)) {
-                case TASKS:
-                    return MainActivity.this.selectedGoal == 0 ? null
-                            : DatabaseHelper.getInstance(MainActivity.this).getTasks(
+                switch (id) {
+                case LOADER_TASKS:
+                    return DatabaseHelper.getInstance(MainActivity.this).getTasks(
                                     MainActivity.this.selectedGoal);
-                case DAY:
+                case LOADER_DAY:
                     return null;//DatabaseHelper.getInstance(MainActivity.this).getDay();
-                case GOALS:
+                case LOADER_GOALS:
                     // FALL-THROUGH
                 default:
                     return DatabaseHelper.getInstance(MainActivity.this).getGoals();
-
                 }
             }
         };
@@ -223,16 +211,16 @@ public class MainActivity extends AppCompatActivity implements
         if (items == null) {
             items = new Item[0];
         }
-        switch (LoaderType.get(loader.getId())) {
-        case GOALS:
+        switch (loader.getId()) {
+        case LOADER_GOALS:
             this.goalsList.setAdapter(
                     new SPlannerAdapter(this, R.layout.list_item_single, items));
             break;
-        case TASKS:
+        case LOADER_TASKS:
             this.tasksList.setAdapter(
                     new SPlannerAdapter(this, R.layout.list_item, items));
             break;
-        case DAY:
+        case LOADER_DAY:
             this.dayList.setAdapter(
                     new SPlannerAdapter(this, R.layout.list_item, items));
             break;

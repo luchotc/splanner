@@ -12,11 +12,12 @@ import android.provider.BaseColumns;
 
 public final class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE = "splanner.db";
-    private static final int VERSION = 2;
+    private static final int VERSION = 1;
 
     private static final char COMMA = ',';
     private static final String TYPE_INT = " INTEGER";
     private static final String TYPE_TEXT = " TEXT";
+    private static final String ASC = " ASC";
     private static final String CREATE_TABLE = "CREATE TABLE IF NOT EXISTS ";
     private static final String CREATE_TABLE_GOALS = CREATE_TABLE + Schema.TABLE_GOALS + "("
             + Schema._ID + TYPE_INT + " PRIMARY KEY AUTOINCREMENT" + COMMA
@@ -148,7 +149,14 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     public Item[] getGoals() {
-        final Cursor cursor = this.select(Schema.TABLE_GOALS, null, null, null, null, null);
+        final Cursor cursor = this.select(
+                Schema.TABLE_GOALS,
+                null,
+                null,
+                null,
+                Schema.FIELD_TEXT + ASC,
+                null
+        );
         if (cursor != null && DatabaseHelper.moveToFirst(cursor)) {
             final Item[] goals = new Item[cursor.getCount()];
             do {
@@ -164,13 +172,13 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    public Item[] getTasks(Long goalId) {
+    public Item[] getTasks(long goalId) {
         final Cursor cursor = this.select(
                 Schema.TABLE_TASKS,
                 null,
-                Schema.FIELD_GOAL_ID + " = ?",
-                new String[] { goalId.toString() },
-                null,
+                goalId != 0 ? Schema.FIELD_GOAL_ID + " = ?" : null,
+                goalId != 0 ? new String[] { Long.toString(goalId) } : null,
+                Schema.FIELD_TEXT + ASC,
                 null
         );
         if (cursor != null && DatabaseHelper.moveToFirst(cursor)) {
