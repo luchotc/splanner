@@ -7,7 +7,6 @@ import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
@@ -41,7 +40,6 @@ public class MainActivity extends AppCompatActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         this.setContentView(R.layout.main_activity);
-
 
         this.goalsList = (ListView) this.findViewById(R.id.list_goals);
         this.tasksList = (ListView) this.findViewById(R.id.list_tasks);
@@ -114,16 +112,12 @@ public class MainActivity extends AppCompatActivity implements
                 return true;
             }
         });
-        this.goalsList.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+        this.goalsList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 MainActivity.this.selectedGoal = id;
-                Log.e("SPLANNER", "" + id);
                 lm.restartLoader(LoaderType.TASKS.ordinal(), null, MainActivity.this);
             }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) { /* NOP */ }
         });
 
         /* Tasks list */
@@ -136,7 +130,7 @@ public class MainActivity extends AppCompatActivity implements
                     return;
                 }
                 final View view = LayoutInflater.from(MainActivity.this).inflate(
-                        R.layout.add_dialog, null);
+                        R.layout.add_dialog, null, false);
                 final EditText task = (EditText) view.findViewById(R.id.new_item);
                 task.setHint(R.string.dialog_add_task_hint);
                 new AlertDialog.Builder(MainActivity.this)
@@ -194,14 +188,11 @@ public class MainActivity extends AppCompatActivity implements
                 return true;
             }
         });
-        this.tasksList.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+        this.tasksList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Toast.makeText(MainActivity.this, Long.toString(id), Toast.LENGTH_SHORT).show();
             }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) { /* NOP */ }
         });
     }
 
