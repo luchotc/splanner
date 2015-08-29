@@ -4,7 +4,7 @@ import android.content.Context;
 import android.support.v4.content.AsyncTaskLoader;
 
 
-public abstract class SAsyncTaskLoader<T> extends AsyncTaskLoader<T> {
+/* package */ abstract class SAsyncTaskLoader<T> extends AsyncTaskLoader<T> {
     private T data;
 
     public SAsyncTaskLoader(Context context) {

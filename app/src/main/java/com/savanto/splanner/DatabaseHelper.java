@@ -10,9 +10,9 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.provider.BaseColumns;
 
 
-public final class DatabaseHelper extends SQLiteOpenHelper {
+/* package */ final class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE = "splanner.db";
-    private static final int VERSION = 2;
+    private static final int VERSION = 3;
 
     private static final char COMMA = ',';
     private static final String TYPE_INT = " INTEGER";
@@ -28,8 +28,9 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
             + Schema.FIELD_GOAL_ID + TYPE_INT + COMMA
             + Schema.FIELD_TEXT + TYPE_TEXT
             + ")";
-    private static final String CREATE_TABLE_DAY = CREATE_TABLE + Schema.TABLE_DAY + "("
+    private static final String CREATE_TABLE_DAY = CREATE_TABLE + Schema.TABLE_TIMES + "("
             + Schema._ID + TYPE_INT + " PRIMARY KEY AUTOINCREMENT" + COMMA
+            + Schema.FIELD_GOAL_ID + TYPE_INT + COMMA
             + Schema.FIELD_TASK_ID + TYPE_INT + COMMA
             + Schema.FIELD_TIME + TYPE_INT + COMMA
             + Schema.FIELD_TEXT + TYPE_TEXT
@@ -61,7 +62,7 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         db.execSQL(DROP_TABLE + Schema.TABLE_GOALS);
         db.execSQL(DROP_TABLE + Schema.TABLE_TASKS);
-        db.execSQL(DROP_TABLE + Schema.TABLE_DAY);
+        db.execSQL(DROP_TABLE + Schema.TABLE_TIMES);
         this.onCreate(db);
     }
 
@@ -112,6 +113,10 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     private boolean delete(String table, Long id) {
+        return this.delete(table, Schema._ID + " = ?", new String[]{ id.toString() });
+    }
+
+    private boolean delete(String table, String whereClause, String[] whereArgs) {
         final SQLiteDatabase db;
         try {
             db = this.getWritableDatabase();
@@ -121,7 +126,7 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
 
         try {
             db.beginTransaction();
-            db.delete(table, Schema._ID + " = ?", new String[]{ id.toString() });
+            db.delete(table, whereClause, whereArgs);
             db.setTransactionSuccessful();
         } catch (SQLiteException e) {
             return false;
@@ -156,7 +161,7 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    public Item[] getGoals() {
+    public Model.Goal[] getGoals() {
         final Cursor cursor = this.select(
                 Schema.TABLE_GOALS,
                 null,
@@ -166,9 +171,9 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
                 null
         );
         if (cursor != null && DatabaseHelper.moveToFirst(cursor)) {
-            final Item[] goals = new Item[cursor.getCount()];
+            final Model.Goal[] goals = new Model.Goal[cursor.getCount()];
             do {
-                goals[cursor.getPosition()] = new Item(
+                goals[cursor.getPosition()] = new Model.Goal(
                         DatabaseHelper.getLong(cursor, Schema._ID),
                         DatabaseHelper.getString(cursor, Schema.FIELD_TEXT)
                 );
@@ -181,20 +186,21 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    public Item[] getTasks(long goalId) {
+    public Model.Task[] getTasks(Long goalId) {
         final Cursor cursor = this.select(
                 Schema.TABLE_TASKS,
                 null,
                 goalId != 0 ? Schema.FIELD_GOAL_ID + " = ?" : null,
-                goalId != 0 ? new String[] { Long.toString(goalId) } : null,
+                goalId != 0 ? new String[] { goalId.toString() } : null,
                 Schema.FIELD_TEXT + ASC,
                 null
         );
         if (cursor != null && DatabaseHelper.moveToFirst(cursor)) {
-            final Item[] tasks = new Item[cursor.getCount()];
+            final Model.Task[] tasks = new Model.Task[cursor.getCount()];
             do {
-                tasks[cursor.getPosition()] = new Item(
+                tasks[cursor.getPosition()] = new Model.Task(
                         DatabaseHelper.getLong(cursor, Schema._ID),
+                        DatabaseHelper.getLong(cursor, Schema.FIELD_GOAL_ID),
                         DatabaseHelper.getString(cursor, Schema.FIELD_TEXT)
                 );
             } while (cursor.moveToNext());
@@ -206,9 +212,9 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    public Item[] getDay() {
+    public Model.Time[] getTimes() {
         final Cursor cursor = this.select(
-                Schema.TABLE_DAY,
+                Schema.TABLE_TIMES,
                 null,
                 null,
                 null,
@@ -216,10 +222,12 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
                 null
         );
         if (cursor != null && DatabaseHelper.moveToFirst(cursor)) {
-            final Item[] times = new Item[cursor.getCount()];
+            final Model.Time[] times = new Model.Time[cursor.getCount()];
             do {
-                times[cursor.getPosition()] = new Item(
+                times[cursor.getPosition()] = new Model.Time(
                         DatabaseHelper.getLong(cursor, Schema._ID),
+                        DatabaseHelper.getLong(cursor, Schema.FIELD_GOAL_ID),
+                        DatabaseHelper.getLong(cursor, Schema.FIELD_TASK_ID),
                         DatabaseHelper.getLong(cursor, Schema.FIELD_TIME),
                         DatabaseHelper.getString(cursor, Schema.FIELD_TEXT)
                 );
@@ -246,25 +254,47 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
         return this.insert(Schema.TABLE_TASKS, values);
     }
 
-    public boolean insertTime(long time, Item task) {
-        final ContentValues values = new ContentValues(3);
+    public boolean insertTime( Model.Task task, long time) {
+        final ContentValues values = new ContentValues(4);
+        values.put(Schema.FIELD_GOAL_ID, task.goalId);
         values.put(Schema.FIELD_TASK_ID, task.id);
         values.put(Schema.FIELD_TIME, time);
         values.put(Schema.FIELD_TEXT, task.text);
 
-        return this.insert(Schema.TABLE_DAY, values);
+        return this.insert(Schema.TABLE_TIMES, values);
     }
 
-    public boolean deleteGoal(long id) {
-        return this.delete(Schema.TABLE_GOALS, id);
+    public boolean deleteGoal(Long id) {
+        return (this.delete(Schema.TABLE_GOALS, id)
+                && this.delete(
+                        Schema.TABLE_TASKS,
+                        Schema.FIELD_GOAL_ID + " = ?",
+                        new String[] { id.toString() }
+                )
+                && this.delete(
+                        Schema.TABLE_TIMES,
+                        Schema.FIELD_GOAL_ID + " = ?",
+                        new String[] { id.toString() }
+                )
+        );
     }
 
-    public boolean deleteTask(long id) {
-        return this.delete(Schema.TABLE_TASKS, id);
+    public boolean deleteTask(Long id) {
+        return (this.delete(Schema.TABLE_TASKS, id)
+                && this.delete(
+                        Schema.TABLE_TIMES,
+                        Schema.FIELD_TASK_ID + " = ?",
+                        new String[] { id.toString() }
+                )
+        );
+    }
+
+    public boolean deleteTime(long id) {
+        return this.delete(Schema.TABLE_TIMES, id);
     }
 
 
-    public boolean clearDay() {
+    public boolean clearTimes() {
         final SQLiteDatabase db;
         try {
             db = this.getWritableDatabase();
@@ -274,7 +304,7 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
 
         try {
             db.beginTransaction();
-            db.execSQL(DROP_TABLE + Schema.TABLE_DAY);
+            db.execSQL(DROP_TABLE + Schema.TABLE_TIMES);
             db.execSQL(CREATE_TABLE_DAY);
             db.setTransactionSuccessful();
         } catch (SQLiteException e) {
@@ -289,7 +319,7 @@ public final class DatabaseHelper extends SQLiteOpenHelper {
     private static final class Schema implements BaseColumns {
         private static final String TABLE_GOALS = "Goals";
         private static final String TABLE_TASKS = "Tasks";
-        private static final String TABLE_DAY = "Day";
+        private static final String TABLE_TIMES = "Times";
 
         private static final String FIELD_TEXT = "text";
         private static final String FIELD_GOAL_ID = "goal_id";
