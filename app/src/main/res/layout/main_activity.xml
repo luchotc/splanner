@@ -9,24 +9,45 @@
         android:layout_height="0dp"
         android:layout_centerHorizontal="true"
         />
+
+    <TextView style="@style/SectionHeading"
+        android:id="@+id/heading_goals"
+        android:layout_toLeftOf="@id/centerline"
+        android:text="@string/goals"
+        />
     <ListView
         android:id="@+id/list_goals"
         android:layout_width="wrap_content"
         android:layout_height="200dp"
         android:layout_toLeftOf="@id/centerline"
+        android:layout_below="@id/heading_goals"
+        />
+
+    <TextView style="@style/SectionHeading"
+        android:id="@+id/heading_tasks"
+        android:layout_toLeftOf="@id/centerline"
+        android:layout_below="@id/list_goals"
+        android:text="@string/tasks"
         />
     <ListView
         android:id="@+id/list_tasks"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:layout_below="@id/list_goals"
+        android:layout_below="@id/heading_tasks"
         android:layout_toLeftOf="@id/centerline"
+        />
+
+    <TextView style="@style/SectionHeading"
+        android:id="@+id/heading_day"
+        android:layout_toRightOf="@id/centerline"
+        android:text="@string/day"
         />
     <ListView
         android:id="@+id/list_day"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_toRightOf="@id/centerline"
+        android:layout_below="@id/heading_day"
         />
 
     <Button style="@style/AddButton"

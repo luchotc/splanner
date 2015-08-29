@@ -1,6 +1,9 @@
 <resources>
     <string name="app_name">Sarah\'s Planner</string>
     <string name="btn_add">+</string>
+    <string name="goals">Goals</string>
+    <string name="tasks">Tasks</string>
+    <string name="day">Day</string>
     <string name="dialog_add_goal">Add goal</string>
     <string name="dialog_add_task">Add task</string>
     <string name="dialog_add_goal_hint">Conquer the world</string>
