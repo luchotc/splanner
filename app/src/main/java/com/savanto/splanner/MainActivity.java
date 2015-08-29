@@ -226,15 +226,15 @@ public class MainActivity extends AppCompatActivity implements
         switch (LoaderType.get(loader.getId())) {
         case GOALS:
             this.goalsList.setAdapter(
-                    new SPlannerAdapter(this, items));
+                    new SPlannerAdapter(this, R.layout.list_item_single, items));
             break;
         case TASKS:
             this.tasksList.setAdapter(
-                    new SPlannerAdapter(this, items));
+                    new SPlannerAdapter(this, R.layout.list_item, items));
             break;
         case DAY:
             this.dayList.setAdapter(
-                    new SPlannerAdapter(this, items));
+                    new SPlannerAdapter(this, R.layout.list_item, items));
             break;
         }
     }
@@ -244,8 +244,8 @@ public class MainActivity extends AppCompatActivity implements
 
 
     private static final class SPlannerAdapter extends ArrayAdapter<Item> {
-        public SPlannerAdapter(Context context, Item[] items) {
-            super(context, R.layout.list_item, items);
+        public SPlannerAdapter(Context context, int resource, Item[] items) {
+            super(context, resource, items);
         }
 
         @Override
