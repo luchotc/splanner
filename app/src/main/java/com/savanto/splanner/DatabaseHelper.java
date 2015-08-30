@@ -12,7 +12,7 @@ import android.provider.BaseColumns;
 
 /* package */ final class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE = "splanner.db";
-    private static final int VERSION = 3;
+    private static final int VERSION = 1;
 
     private static final char COMMA = ',';
     private static final String TYPE_INT = " INTEGER";
