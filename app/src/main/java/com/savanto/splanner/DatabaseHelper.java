@@ -28,7 +28,7 @@ import android.provider.BaseColumns;
             + Schema.FIELD_GOAL_ID + TYPE_INT + COMMA
             + Schema.FIELD_TEXT + TYPE_TEXT
             + ")";
-    private static final String CREATE_TABLE_DAY = CREATE_TABLE + Schema.TABLE_TIMES + "("
+    private static final String CREATE_TABLE_TIMES = CREATE_TABLE + Schema.TABLE_TIMES + "("
             + Schema._ID + TYPE_INT + " PRIMARY KEY AUTOINCREMENT" + COMMA
             + Schema.FIELD_GOAL_ID + TYPE_INT + COMMA
             + Schema.FIELD_TASK_ID + TYPE_INT + COMMA
@@ -55,7 +55,7 @@ import android.provider.BaseColumns;
     public void onCreate(SQLiteDatabase db) {
         db.execSQL(CREATE_TABLE_GOALS);
         db.execSQL(CREATE_TABLE_TASKS);
-        db.execSQL(CREATE_TABLE_DAY);
+        db.execSQL(CREATE_TABLE_TIMES);
     }
 
     @Override
@@ -305,7 +305,7 @@ import android.provider.BaseColumns;
         try {
             db.beginTransaction();
             db.execSQL(DROP_TABLE + Schema.TABLE_TIMES);
-            db.execSQL(CREATE_TABLE_DAY);
+            db.execSQL(CREATE_TABLE_TIMES);
             db.setTransactionSuccessful();
         } catch (SQLiteException e) {
             return false;

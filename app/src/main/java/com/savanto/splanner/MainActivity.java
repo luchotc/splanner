@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity implements
     private SharedPreferences prefs;
     private ListView goalsList;
     private ListView tasksList;
-    private ListView dayList;
+    private ListView timesList;
 
     private long selectedGoalId;
 
@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity implements
 
         this.goalsList = (ListView) this.findViewById(R.id.list_goals);
         this.tasksList = (ListView) this.findViewById(R.id.list_tasks);
-        this.dayList = (ListView) this.findViewById(R.id.list_day);
+        this.timesList = (ListView) this.findViewById(R.id.list_times);
 
         final LoaderManager lm = this.getSupportLoaderManager();
         lm.initLoader(LOADER_GOALS, null, this);
@@ -207,8 +207,8 @@ public class MainActivity extends AppCompatActivity implements
             }
         });
 
-        /* Day schedule */
-        this.dayList.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+        /* Schedule */
+        this.timesList.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position,
                                            final long id) {
@@ -222,7 +222,7 @@ public class MainActivity extends AppCompatActivity implements
                             } else {
                                 Toast.makeText(
                                         MainActivity.this, R.string.error, Toast.LENGTH_SHORT)
-                                    .show();
+                                        .show();
                             }
                         }
                     })
@@ -291,7 +291,7 @@ public class MainActivity extends AppCompatActivity implements
             this.tasksList.setAdapter(new SPlannerAdapter(this, R.layout.list_item, items));
             break;
         case LOADER_TIMES:
-            this.dayList.setAdapter(new TimesAdapter(this, items));
+            this.timesList.setAdapter(new TimesAdapter(this, items));
             break;
         }
     }
