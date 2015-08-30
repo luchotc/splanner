@@ -37,7 +37,7 @@
     <TextView style="@style/SectionHeading"
         android:id="@+id/heading_day"
         android:layout_toRightOf="@id/centerline"
-        android:text="@string/day"
+        android:text="@string/schedule"
         />
     <ListView style="@style/List"
         android:id="@+id/list_day"

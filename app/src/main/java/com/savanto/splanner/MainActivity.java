@@ -11,15 +11,20 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.CheckedTextView;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
+import java.text.DateFormat;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.TimeZone;
 
 
 public class MainActivity extends AppCompatActivity implements
@@ -85,7 +90,8 @@ public class MainActivity extends AppCompatActivity implements
             public boolean onItemLongClick(AdapterView<?> parent, final View view, int position,
                                            final long id) {
                 new AlertDialog.Builder(MainActivity.this)
-                    .setTitle(R.string.dialog_delete_goal)
+                    .setTitle(R.string.dialog_delete_goal_title)
+                    .setMessage(R.string.dialog_delete_goal_message)
                     .setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
@@ -153,7 +159,8 @@ public class MainActivity extends AppCompatActivity implements
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position,
                                            final long id) {
                 new AlertDialog.Builder(MainActivity.this)
-                    .setTitle(R.string.dialog_delete_task)
+                    .setTitle(R.string.dialog_delete_task_title)
+                    .setMessage(R.string.dialog_delete_task_message)
                     .setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
@@ -206,7 +213,7 @@ public class MainActivity extends AppCompatActivity implements
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position,
                                            final long id) {
                 new AlertDialog.Builder(MainActivity.this)
-                    .setTitle(R.string.dialog_delete_time)
+                    .setTitle(R.string.dialog_delete_time_title)
                     .setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
@@ -284,7 +291,7 @@ public class MainActivity extends AppCompatActivity implements
             this.tasksList.setAdapter(new SPlannerAdapter(this, R.layout.list_item, items));
             break;
         case LOADER_TIMES:
-            this.dayList.setAdapter(new SPlannerAdapter(this, R.layout.list_item, items));
+            this.dayList.setAdapter(new TimesAdapter(this, items));
             break;
         }
     }
@@ -301,7 +308,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
 
-    private static final class SPlannerAdapter extends ArrayAdapter<Model> {
+    private static class SPlannerAdapter extends ArrayAdapter<Model> {
         public SPlannerAdapter(Context context, int resource, Model[] items) {
             super(context, resource, items);
         }
@@ -309,6 +316,37 @@ public class MainActivity extends AppCompatActivity implements
         @Override
         public long getItemId(int position) {
             return this.getItem(position).id;
+        }
+    }
+
+
+    private static final class TimesAdapter extends SPlannerAdapter {
+        private static final int TIME = 0;
+        private static final int TASK = 1;
+        private static final DateFormat TIME_FORMAT = DateFormat.getTimeInstance(DateFormat.SHORT);
+        static {
+            TIME_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
+        }
+
+        private final LayoutInflater inflater;
+
+        public TimesAdapter(Context context, Model[] items) {
+            super(context, 0, items);
+            this.inflater = LayoutInflater.from(context);
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            if (convertView == null) {
+                convertView = this.inflater.inflate(R.layout.list_item_time, parent, false);
+            }
+            final Model.Time time = (Model.Time) this.getItem(position);
+
+            ((TextView) ((ViewGroup) convertView).getChildAt(TIME)).setText(
+                    TIME_FORMAT.format(new Date(time.time * 1000)));
+            ((TextView) ((ViewGroup) convertView).getChildAt(TASK)).setText(time.text);
+
+            return convertView;
         }
     }
 }

@@ -3,15 +3,17 @@
     <string name="btn_add">+</string>
     <string name="goals">Goals</string>
     <string name="tasks">Tasks</string>
-    <string name="day">Day</string>
+    <string name="schedule">Schedule</string>
     <string name="dialog_add_goal">Add goal</string>
     <string name="dialog_add_task">Add task</string>
     <string name="dialog_add_goal_hint">Conquer the world</string>
     <string name="dialog_add_task_hint">Steal underwear</string>
     <string name="dialog_add_time">Pick a time</string>
-    <string name="dialog_delete_goal">Delete this goal? (Its tasks will also be deleted!)</string>
-    <string name="dialog_delete_task">Delete this task? (It will also be deleted from the schedule!)</string>
-    <string name="dialog_delete_time">Delete this scheduled task?</string>
+    <string name="dialog_delete_goal_title">Delete this goal?</string>
+    <string name="dialog_delete_goal_message">Its tasks will also be deleted.</string>
+    <string name="dialog_delete_task_title">Delete this task?</string>
+    <string name="dialog_delete_task_message">It will also be deleted from the schedule.</string>
+    <string name="dialog_delete_time_title">Delete this scheduled task?</string>
     <string name="dialog_ok">OK</string>
     <string name="dialog_cancel">Cancel</string>
 
