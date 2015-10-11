@@ -2,9 +2,7 @@ package com.savanto.splanner;
 
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AlertDialog;
@@ -22,19 +20,16 @@ import android.widget.TimePicker;
 import android.widget.Toast;
 
 import java.text.DateFormat;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
 
 
 public class MainActivity extends AppCompatActivity implements
         LoaderManager.LoaderCallbacks<Model[]> {
-    private static final String PREF_YESTERDAY = "com.savanto.splanner.Yesterday";
     private static final int LOADER_GOALS = 0;
     private static final int LOADER_TASKS = 1;
     private static final int LOADER_TIMES = 2;
 
-    private SharedPreferences prefs;
     private ListView goalsList;
     private ListView tasksList;
     private ListView timesList;
@@ -46,8 +41,6 @@ public class MainActivity extends AppCompatActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         this.setContentView(R.layout.main_activity);
-
-        this.prefs = PreferenceManager.getDefaultSharedPreferences(this);
 
         this.goalsList = (ListView) this.findViewById(R.id.list_goals);
         this.tasksList = (ListView) this.findViewById(R.id.list_tasks);
@@ -234,22 +227,6 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        final long yesterday = this.prefs.getLong(PREF_YESTERDAY, 0);
-        final Calendar calendar = Calendar.getInstance();
-        calendar.set(Calendar.HOUR_OF_DAY, 0);
-        calendar.set(Calendar.MINUTE, 0);
-        calendar.set(Calendar.SECOND, 0);
-        final long now = calendar.getTimeInMillis() / 1000;
-        if (now > yesterday) {
-            DatabaseHelper.getInstance(this).clearTimes();
-            this.prefs.edit().putLong(PREF_YESTERDAY, now).apply();
-            this.getSupportLoaderManager().restartLoader(LOADER_TIMES, null, this);
-        }
-    }
-
-    @Override
     public Loader<Model[]> onCreateLoader(final int id, final Bundle args) {
         return new SAsyncTaskLoader<Model[]>(this) {
             @Override
@@ -323,7 +300,8 @@ public class MainActivity extends AppCompatActivity implements
     private static final class TimesAdapter extends SPlannerAdapter {
         private static final int TIME = 0;
         private static final int TASK = 1;
-        private static final DateFormat TIME_FORMAT = DateFormat.getTimeInstance(DateFormat.SHORT);
+        private static final DateFormat TIME_FORMAT = DateFormat.getDateTimeInstance(
+                DateFormat.SHORT, DateFormat.SHORT);
         static {
             TIME_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
         }
