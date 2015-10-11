@@ -13,6 +13,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.CheckedTextView;
+import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -20,8 +21,8 @@ import android.widget.TimePicker;
 import android.widget.Toast;
 
 import java.text.DateFormat;
+import java.util.Calendar;
 import java.util.Date;
-import java.util.TimeZone;
 
 
 public class MainActivity extends AppCompatActivity implements
@@ -176,17 +177,29 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onItemClick(final AdapterView<?> parent, View view, final int position,
                                     long id) {
-                final TimePicker time = (TimePicker) LayoutInflater.from(MainActivity.this).inflate(
+                final View dateTimeView = LayoutInflater.from(MainActivity.this).inflate(
                         R.layout.time_dialog, null, false);
+                final DatePicker date = (DatePicker) dateTimeView.findViewById(
+                        R.id.date_picker);
+                final TimePicker time = (TimePicker) dateTimeView.findViewById(
+                        R.id.time_picker);
                 new AlertDialog.Builder(MainActivity.this)
                     .setTitle(R.string.dialog_add_time)
-                    .setView(time)
+                    .setView(dateTimeView)
                     .setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
+                            final Calendar cal = Calendar.getInstance();
+                            cal.set(
+                                    date.getYear(),
+                                    date.getMonth(),
+                                    date.getDayOfMonth(),
+                                    time.getCurrentHour(),
+                                    time.getCurrentMinute()
+                            );
                             if (DatabaseHelper.getInstance(MainActivity.this).insertTime(
                                     (Model.Task) parent.getAdapter().getItem(position),
-                                    time.getCurrentHour() * 3600 + time.getCurrentMinute() * 60)) {
+                                    cal.getTimeInMillis() / 1000)) {
                                 lm.restartLoader(LOADER_TIMES, null, MainActivity.this);
                             } else {
                                 Toast.makeText(
@@ -301,10 +314,7 @@ public class MainActivity extends AppCompatActivity implements
         private static final int TIME = 0;
         private static final int TASK = 1;
         private static final DateFormat TIME_FORMAT = DateFormat.getDateTimeInstance(
-                DateFormat.SHORT, DateFormat.SHORT);
-        static {
-            TIME_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
-        }
+                DateFormat.MEDIUM, DateFormat.SHORT);
 
         private final LayoutInflater inflater;
 
